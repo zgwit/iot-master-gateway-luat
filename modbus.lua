@@ -50,6 +50,8 @@ local function modbus_read()
                     local a,_ = string.toHex(cacheData)
                     log.info("modbus接收数据:",a)
                     --用户逻辑处理代码
+
+                    
                     --
                     cacheData = ""
                 end
