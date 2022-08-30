@@ -8,7 +8,7 @@ require"common"
 --在开发“要求功耗低”的项目时，一定要想办法保证pm.wake("modbusrtu")后，在不需要串口时调用pm.sleep("testUart")
 pm.wake("modbusrtu")
 
-local uart_id = 1
+local uart_id = 2
 local uart_baud = 9600
 
 --   起始        地址    功能代码    数据    CRC校验    结束
@@ -51,9 +51,15 @@ end
 
 --注册串口的数据发送通知函数
 uart.on(uart_id,"receive",function() sys.publish("UART_RECEIVE") end)
+uart.on(uart_id,"sent",function() 
+	log.info("uart sent")
+end)
 
 --配置并且打开串口
-uart.setup(uart_id,uart_baud,8,uart.PAR_NONE,uart.STOP_1)
+--配置并且打开串口
+uart.setup(uart_id,uart_baud,8,uart.PAR_NONE,uart.STOP_1, nil, 1)
+--485使能
+uart.set_rs485_oe(uart_id, pio.P0_23, 1, 1, 1) --银尔达724，其他底板自行修改
 
 --启动串口数据接收任务
 sys.taskInit(modbus_read)
@@ -61,7 +67,8 @@ sys.taskInit(modbus_read)
 sys.taskInit(function ()
     while true do
         sys.wait(5000)
-        modbus_send("0x01","0x01","0x0101","0x04")
+        --modbus_send("0x01","0x01","0x0101","0x04")
+		modbus_send(1,3,512,2) --测试温度计
     end
 end)
 
