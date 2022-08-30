@@ -1,6 +1,32 @@
 
 module(...,package.seeall)
 
+
+local function makeMap(tkey, tvalue)
+    local result = {}
+    for k, v in ipairs(tkey) do
+        result[v] = tvalue[k] 
+    end
+end
+
+
+local queue = {} -- {slave, addr, size, unpack="bbb", keys="a,b,c", prefix="", id=""}
+
+--Modbus数据采集线程
+sys.taskInit(
+    function()
+        while true do
+            sys.wait(5000) --TODO 参数化
+
+            -- 1、取指令，读
+
+        end
+    end
+)
+
+
+
+
 require"utils"
 require"common"
 
