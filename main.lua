@@ -24,7 +24,7 @@ require "netLed"
 
 
 require "mqttTask"
-request "modbusRtu"
+request "modbus"
 
 
 --启动系统框架
