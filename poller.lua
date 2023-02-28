@@ -19,7 +19,10 @@ sys.taskInit(function()
             local result, data = modbusRtu.send(p[1], p[2], p[3], p[4])
             if result then
                 local values = mapper.parse(data, p[5])
-                log.info("poller", p[1], p[2], p[3], p[4], json.encode(values))
+                local payload = json.encode(values)
+                log.info("poller", p[1], p[2], p[3], p[4], payload)
+
+                mqttTask.publish("/data", payload)
             end
             -- sys.wait(2000)
         end
