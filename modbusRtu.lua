@@ -9,6 +9,7 @@ pm.wake("modbusrtu")
 
 local uart_id = 2
 local uart_baud = 9600
+local timeout = 2000
 
 -- 配置并且打开串口
 uart.setup(uart_id, uart_baud, 8, uart.PAR_NONE, uart.STOP_1, nil, 1)
@@ -20,9 +21,7 @@ uart.set_rs485_oe(uart_id, pio.P0_23, 1, 1, 1) -- 银尔达724，其他底板自
 uart.on(uart_id, "receive", function() sys.publish("UART_RECEIVE") end)
 -- uart.on(uart_id, "sent", function() log.info("modbus", "uart sent") end)
 
-local callback
-
-function modbus_send(slave, code, addr, size, cb)
+function send(slave, code, addr, size)
     --   起始        地址    功能代码    数据    CRC校验    结束
     -- 3.5 字符     8 位      8 位    N x 8 位   16 位   3.5 字符
     -- local data = (string.format("%02x", slave) .. string.format("%02x", code) ..
@@ -30,7 +29,9 @@ function modbus_send(slave, code, addr, size, cb)
     local data = pack.pack('bb>H>H', slave, code, addr, size)
     local crc = pack.pack('<h', crypto.crc16("MODBUS", data))
     uart.write(uart_id, data .. crc)
-    callback = cb
+
+    -- 等待响应
+    return sys.waitUntil("MODBUS_RECEIVE", timeout)
 end
 
 -- 启动串口数据接收任务
@@ -46,11 +47,8 @@ sys.taskInit(function()
                     local a, _ = string.toHex(cacheData)
                     log.info("modbus", "read", a)
 
-                    -- 用户逻辑处理代码                    
-                    if callback then
-                        string.sub(cacheData, 4)
-                        callback(cacheData)
-                    end
+                    -- 用户逻辑处理代码
+                    sys.publish("MODBUS_RECEIVE", string.sub(cacheData, 4))
 
                     cacheData = ""
                 end
@@ -60,14 +58,4 @@ sys.taskInit(function()
         end
     end
 end)
-
--- 启动Modbus读取
--- sys.taskInit(function()
---     while true do
---         sys.wait(5000)
---         -- modbus_send("0x01","0x01","0x0101","0x04")
---         modbus_send(1, 3, 512, 2) -- 测试温度计
-
---     end
--- end)
 
