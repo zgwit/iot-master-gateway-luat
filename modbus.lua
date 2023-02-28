@@ -7,8 +7,13 @@ require "common"
 -- 在开发“要求功耗低”的项目时，一定要想办法保证pm.wake("modbusrtu")后，在不需要串口时调用pm.sleep("testUart")
 pm.wake("modbusrtu")
 
+-- TODO 配置化
+
+-- 串口ID
 local uart_id = 2
+-- 波特率
 local uart_baud = 9600
+-- 读超时
 local timeout = 2000
 
 -- 配置并且打开串口

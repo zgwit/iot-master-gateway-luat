@@ -43,7 +43,10 @@ local function receive(client)
         if result then
             log.info("MQTT", "message", data.topic, data.payload)
             -- TODO：根据需求自行处理data.payload
+            if data.topic == "/command/"..clientId then
+                local command = json.decode(data.payload)
 
+            end
         else
             break
         end
@@ -75,7 +78,7 @@ sys.taskInit(function()
                 ready = true
 
                 -- 订阅主题
-                -- client:subscribe({["/event0"]=0})
+                client:subscribe({["/command/"..clientId]=0})
 
                 -- 循环处理接收和发送的数据
                 while true do

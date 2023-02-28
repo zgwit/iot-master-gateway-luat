@@ -4,25 +4,22 @@ request "mapper"
 request "modbus"
 request "mqttTask"
 
+
 pollers = {
     -- 从站，指令，偏移，长度
-    {
-        slave = 1,
-        code = 3,
-        address = 512,
-        size = 2,
-        mapper = "TempratureSensor"
-    } -- 测试温度计
+    {slave = 1, code = 3, address = 512, size = 2, mapper = "TempratureSensor"} -- 测试温度计
 }
 
+-- 数据上传主题
+local topic = "/data/" .. misc.getImei
+
+-- 配置文件名
 local filename = "pollers.json"
 
 function load()
     if not io.exists(filename) then return end
     local data = io.readFile(filename)
-    if #data > 0 then
-        pollers = json.decode(data)
-    end
+    if #data > 0 then pollers = json.decode(data) end
 end
 
 -- 加载配置
@@ -48,7 +45,7 @@ sys.taskInit(function()
                 log.info("poller", p.slave, p.code, p.address, p.size, payload)
 
                 if mqttTask.isReady() then
-                    mqttTask.publish("/data", payload)
+                    mqttTask.publish(topic, payload)
                 else
                     -- 保存到缓存中，下次上线续传
                 end

@@ -53,13 +53,11 @@ function parse(data, map)
         local fmt = (m.be and '>' or '<') .. types[m.type]
         local _, v = pack.unpack(str, fmt)
         -- 倍率
-        if m.rate == 0 or m.rate == 1 then
-        else
+        if m.rate ~= 0 and m.rate ~= 1 then
             v = v * m.rate
         end
         -- 校准
-        if m.adjust == 0 then
-        else
+        if m.adjust ~= 0 then
             v = v + m.adjust
         end
 
