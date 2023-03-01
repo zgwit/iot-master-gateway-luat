@@ -15,11 +15,9 @@ config = {
     timeout = 2000,
     -- rs485使能io
     -- pin = pio.P0_23,
+    -- 校验，字长，结束符
 }
 
--- TODO 配置化
-
--- define.modbus
 
 function load()
     if not io.exists(define.modbus) then

@@ -5,22 +5,39 @@ require "mqtt"
 require "define"
 
 -- TODO 添加备份服务器
+local imei = misc.getImei()
+
+config = {
+    clientId = imei, -- 默认使用IMEI号
+    username = "",
+    password = "",
+    server = "lbsmqtt.airm2m.com",
+    port = 1884,
+    topics = {
+        setFilter = "down/gateway/" .. imei .. "/#",
+        setMapper = "down/gateway/" .. imei .. "/mapper",
+        setPoller = "down/gateway/" .. imei .. "/poller",
+        setModbus = "down/gateway/" .. imei .. "/modbus",
+        setMqtt = "down/gateway/" .. imei .. "/mqtt",
+        setReboot = "down/gateway/" .. imei .. "/reboot"
+    }
+}
+
+
+function load()
+    if not io.exists(define.mqtt) then
+        return
+    end
+    local data = io.readFile(define.mqtt)
+    if #data > 0 then
+        config = json.decode(data)
+    end
+end
+
+-- 加载配置
+load()
 
 -- MQTT Broker 参数配置
-local clientId = misc.getImei() -- 默认使用IMEI号
-local username = ""
-local password = ""
-local server = "lbsmqtt.airm2m.com"
-local port = 1884
-
-local setFilter = "down/gateway/" .. clientId .. "/#"
-local setMapper = "down/gateway/" .. clientId .. "/mapper"
-local setPoller = "down/gateway/" .. clientId .. "/poller"
-local setModbus = "down/gateway/" .. clientId .. "/modbus"
-local setMqtt = "down/gateway/" .. clientId .. "/mqtt"
-local setReboot = "down/gateway/" .. clientId .. "/reboot"
-
-
 local ready = false
 
 function isReady()
@@ -65,15 +82,15 @@ local function receive(client)
 
             -- 根据需求自行处理data.payload
 
-            if data.topic == setMapper then
+            if data.topic == config.topics.setMapper then
                 io.writeFile(define.mapper, data.payload)
-            elseif data.topic == setPoller then
+            elseif data.topic == config.topics.setPoller then
                 io.writeFile(define.poller, data.payload)
-            elseif data.topic == setModbus then
+            elseif data.topic == config.topics.setModbus then
                 io.writeFile(define.modbus, data.payload)
-            elseif data.topic == setMqtt then
+            elseif data.topic == config.topics.setMqtt then
                 io.writeFile(define.mqtt, data.payload)
-            elseif data.topic == setReboot then
+            elseif data.topic == config.topics.setReboot then
                 sys.restart(data.payload)
             end
 
@@ -97,12 +114,12 @@ sys.taskInit(function()
 
         if socket.isReady() then
 
-            local client = mqtt.client(clientId, 600, username, password)
+            local client = mqtt.client(config.clientId, 600, config.username, config.password)
 
             -- 阻塞执行MQTT CONNECT动作，直至成功
             -- 如果使用ssl连接，打开client:connect("lbsmqtt.airm2m.com",1884,"tcp_ssl",{caCert="ca.crt"})，根据自己的需求配置
             -- client:connect("lbsmqtt.airm2m.com",1884,"tcp_ssl",{caCert="ca.crt"})
-            if client:connect(server, port, "tcp") then
+            if client:connect(config.server, config.port, "tcp") then
                 retry = 0
                 ready = true
 
