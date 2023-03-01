@@ -1,5 +1,6 @@
 module(..., package.seeall)
 
+request "define"
 request "mapper"
 request "modbus"
 request "mqttTask"
@@ -14,21 +15,15 @@ pollers = {
 local topic = "/data/" .. misc.getImei
 
 -- 配置文件名
-local filename = "pollers.json"
-
 function load()
-    if not io.exists(filename) then return end
-    local data = io.readFile(filename)
+    if not io.exists(define.poller) then return end
+    local data = io.readFile(define.poller)
     if #data > 0 then pollers = json.decode(data) end
 end
 
 -- 加载配置
 load()
 
-function store()
-    local data = json.encode(pollers)
-    io.writeFile(filename, data)
-end
 
 -- 启动Modbus读取
 sys.taskInit(function()

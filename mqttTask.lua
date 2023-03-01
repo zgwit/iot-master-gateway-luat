@@ -2,7 +2,9 @@ module(..., package.seeall)
 
 require "misc"
 require "mqtt"
+require "define"
 
+-- TODO 添加备份服务器
 
 -- MQTT Broker 参数配置
 local clientId = misc.getImei() -- 默认使用IMEI号
@@ -11,17 +13,31 @@ local password = ""
 local server = "lbsmqtt.airm2m.com"
 local port = 1884
 
+local setFilter = "down/gateway/" .. clientId .. "/#"
+local setMapper = "down/gateway/" .. clientId .. "/mapper"
+local setPoller = "down/gateway/" .. clientId .. "/poller"
+local setModbus = "down/gateway/" .. clientId .. "/modbus"
+local setMqtt = "down/gateway/" .. clientId .. "/mqtt"
+local setReboot = "down/gateway/" .. clientId .. "/reboot"
+
 
 local ready = false
 
-function isReady() return ready end
+function isReady()
+    return ready
+end
 
 -- 数据发送的消息队列
 local msgQueue = {}
 
 function publish(topic, payload, cb)
     log.info("MQTT", "publish", topic)
-    table.insert(msgQueue, {t = topic, p = payload, q = 0, c = cb})
+    table.insert(msgQueue, {
+        t = topic,
+        p = payload,
+        q = 0,
+        c = cb
+    })
     sys.publish("APP_SOCKET_SEND_DATA") -- 终止接收等待，处理发送
 end
 
@@ -29,8 +45,12 @@ local function send(client)
     while #msgQueue > 0 do
         local msg = table.remove(msgQueue, 1)
         local result = client:publish(msg.t, msg.p, msg.q)
-        if msg.c then msg.c(result) end
-        if not result then return end
+        if msg.c then
+            msg.c(result)
+        end
+        if not result then
+            return
+        end
     end
     return true
 end
@@ -42,11 +62,21 @@ local function receive(client)
         -- 接收到数据
         if result then
             log.info("MQTT", "message", data.topic, data.payload)
-            -- TODO：根据需求自行处理data.payload
-            if data.topic == "/command/"..clientId then
-                local command = json.decode(data.payload)
 
+            -- 根据需求自行处理data.payload
+
+            if data.topic == setMapper then
+                io.writeFile(define.mapper, data.payload)
+            elseif data.topic == setPoller then
+                io.writeFile(define.poller, data.payload)
+            elseif data.topic == setModbus then
+                io.writeFile(define.modbus, data.payload)
+            elseif data.topic == setMqtt then
+                io.writeFile(define.mqtt, data.payload)
+            elseif data.topic == setReboot then
+                sys.restart(data.payload)
             end
+
         else
             break
         end
@@ -54,7 +84,6 @@ local function receive(client)
 
     return result or data == "timeout" or data == "APP_SOCKET_SEND_DATA"
 end
-
 
 -- 启动MQTT客户端任务
 sys.taskInit(function()
@@ -78,7 +107,7 @@ sys.taskInit(function()
                 ready = true
 
                 -- 订阅主题
-                client:subscribe({["/command/"..clientId]=0})
+                client:subscribe({setFilter})
 
                 -- 循环处理接收和发送的数据
                 while true do
@@ -91,7 +120,7 @@ sys.taskInit(function()
                         break
                     end
                 end
-                    
+
                 ready = false
             else
                 retry = retry + 1

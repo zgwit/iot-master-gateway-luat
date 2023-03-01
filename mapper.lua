@@ -1,5 +1,8 @@
 module(..., package.seeall)
 
+require "define"
+
+
 -- 数据类型
 
 local types = {
@@ -29,21 +32,16 @@ mappers = {
     }
 }
 
-local filename = "mappers.json"
 
 function load()
-    if not io.exists(filename) then return end
-    local data = io.readFile(filename)
+    if not io.exists(define.mapper) then return end
+    local data = io.readFile(define.mapper)
     if #data > 0 then mappers = json.decode(data) end
 end
 
 -- 加载配置
 load()
 
-function store()
-    local data = json.encode(mappers)
-    io.writeFile(filename, data)
-end
 
 function parse(data, map)
     local result = {}
